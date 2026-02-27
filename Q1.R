@@ -1,7 +1,3 @@
-setwd("C:/Users/hamme/OneDrive - AUT University/HPAI Modelling Challenge/Phase 1 Resources/Phase 1 Data/Phase 1 documents")
-
-
-
 library(dplyr)
 library(tidyr)
 library(readr)
@@ -382,20 +378,6 @@ ggsave(
 )
 
 
-#ggplot() +
-# geom_sf(data = counties, fill = "grey95", color = "grey70") +
-# stat_density_2d(
-#   data = st_coordinates(cases_sf) %>% as.data.frame(),
-#  aes(X, Y, fill = after_stat(level)),
-#   geom = "polygon",
-#   alpha = 0.6
-# ) +
-# scale_fill_viridis_c() +
-# theme_minimal() +
-# labs(
-#   title = "Spatial Density of Outbreaks",
-#   fill = "Density"
-# )
 
 cases_by_district_prod <- cases_full %>%
   count(district, production, name = "n_outbreaks")
@@ -575,4 +557,5 @@ plots <- mget(paste0("p", 1:max(dat_sf$Day_numeric)))
 plot_combined = plot_grid(plotlist = plots, ncol = 5,labels=1:max(dat_sf$Day_numeric),align="hvlb")
 plot_combined
 ggsave("st_plot.png",plot_combined,width=30,height=25,unit="cm",dpi=1000)
+
 
