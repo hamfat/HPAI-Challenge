@@ -1,7 +1,3 @@
-
-setwd("C:/Users/em18702/OneDrive - AUT University/HPAI Modelling Challenge/Phase 1 Resources/Phase 1 Data/Phase 1 documents")
-
-
 rm(list=ls())
 
 theme_pub <- function(base_size = 14, base_family = "sans") {
@@ -22,7 +18,7 @@ theme_pub <- function(base_size = 14, base_family = "sans") {
 }
 
 ############################################################
-## 0. PACKAGES
+## PACKAGES
 ############################################################
 
 library(tidyverse)
@@ -34,7 +30,7 @@ library(patchwork)
 library(gganimate)
 
 ############################################################
-## 1. LOAD DATA
+## LOAD DATA
 ############################################################
 
 population   <- read_csv("population.csv",          show_col_types = FALSE)
@@ -45,7 +41,7 @@ prev_culls   <- read_csv("prev_culls.csv",          show_col_types = FALSE)
 spatial_risk <- read_csv("spatial_risk_4weeks.csv", show_col_types = FALSE)
 
 ############################################################
-## 2. DATE FORMATTING
+##  DATE FORMATTING
 ############################################################
 
 cases <- cases %>%
@@ -72,7 +68,7 @@ prev_culls <- prev_culls %>%
   )
 
 ############################################################
-## 3. LOAD SPATIAL DATA
+## LOAD SPATIAL DATA
 ############################################################
 
 counties  <- st_read("counties_32626.geojson",  quiet = TRUE)
@@ -90,7 +86,7 @@ cases_sf <- cases_full %>%
   st_as_sf(coords = c("x", "y"), crs = 32626, remove = FALSE)
 
 ############################################################
-## 4. TIME FRAME: FIT VS FORECAST
+##  TIME FRAME: FIT VS FORECAST
 ##    Fit: from first confirmed case to 2026-01-13
 ##    Forecast: next 4 weeks (28 days)
 ############################################################
@@ -102,7 +98,7 @@ sim_dates       <- seq(start_date, forecast_end, by = "day")
 n_days          <- length(sim_dates)
 
 ############################################################
-## 5. COUNTY DEFINITIONS AND FARM COUNTS
+##  COUNTY DEFINITIONS AND FARM COUNTS
 ############################################################
 
 county_farms <- population %>%
@@ -117,7 +113,7 @@ county_index <- tibble(
 )
 
 ############################################################
-## 6. COUNTY-LEVEL DAILY CONFIRMED OUTBREAKS
+##  COUNTY-LEVEL DAILY CONFIRMED OUTBREAKS
 ############################################################
 
 cases_county_daily <- cases %>%
@@ -131,7 +127,7 @@ cases_daily_total <- cases %>%
   rename(date = date_confirmed)
 
 ############################################################
-## 7. COUNTY-TO-COUNTY MOVEMENT MATRIX
+##  COUNTY-TO-COUNTY MOVEMENT MATRIX
 ############################################################
 
 movement_county <- movement %>%
@@ -165,7 +161,7 @@ W_mov[row_sums_mov > 0, ] <- W_mov[row_sums_mov > 0, ] /
   row_sums_mov[row_sums_mov > 0]
 
 ############################################################
-## 8. COUNTY-TO-COUNTY DISTANCE MATRIX
+## COUNTY-TO-COUNTY DISTANCE MATRIX
 ############################################################
 
 counties_sf <- counties %>%
@@ -182,7 +178,7 @@ W_dist <- exp(-D / dist_scale)
 diag(W_dist) <- 0
 
 ############################################################
-## 9. COMBINED TRANSMISSION MATRIX
+## COMBINED TRANSMISSION MATRIX
 ############################################################
 
 alpha_mov  <- 0.6
@@ -195,7 +191,7 @@ W_comb[row_sums_comb > 0, ] <- W_comb[row_sums_comb > 0, ] /
   row_sums_comb[row_sums_comb > 0]
 
 ############################################################
-## 10. BUILD COUNTY-DAY CULLING MATRIX
+##  BUILD COUNTY-DAY CULLING MATRIX
 ##     Reactive culling delayed by 3 days
 ##     Preventive culling: completed only, no delay
 ############################################################
@@ -243,7 +239,7 @@ for (k in seq_len(nrow(cull_counts))) {
   Cull_mat[i, t] <- Cull_mat[i, t] + cull_counts$n_culled[k]
 }
 ############################################################
-## 11. STOCHASTIC COUNTY-LEVEL SEIR WITH CULLING
+## STOCHASTIC COUNTY-LEVEL SEIR WITH CULLING
 ############################################################
 
 run_seir_county <- function(beta_within, beta_between, sigma, gamma,
@@ -321,7 +317,7 @@ run_seir_county <- function(beta_within, beta_between, sigma, gamma,
 }
 
 ############################################################
-## 12. CALIBRATION (GRID SEARCH) USING STOCHASTIC MODEL
+##  CALIBRATION (GRID SEARCH) USING STOCHASTIC MODEL
 ##     Fit to total daily incidence up to fit_end_date
 ############################################################
 
@@ -378,7 +374,7 @@ sigma_best        <- best_par$sigma
 gamma_best        <- best_par$gamma
 
 ############################################################
-## 13. ENSEMBLE SEIR (MULTI-RUN)
+## ENSEMBLE SEIR (MULTI-RUN)
 ############################################################
 
 run_seir_multi <- function(n_runs,
@@ -411,7 +407,7 @@ multi <- run_seir_multi(
 )
 
 ############################################################
-## 14. CI HELPER (TOTALS ACROSS COUNTIES)
+## CI (TOTALS ACROSS COUNTIES)
 ############################################################
 
 get_ci <- function(arr, probs = c(0.025, 0.975)) {
@@ -430,7 +426,7 @@ I_ci <- get_ci(multi$I)
 R_ci <- get_ci(multi$R)
 
 ############################################################
-## 15. PLOT ENSEMBLE SEIR CI CURVES (WITH FIT/FORECAST SPLIT)
+## PLOT ENSEMBLE SEIR CI CURVES (WITH FIT/FORECAST SPLIT)
 ############################################################
 
 plot_ci <- function(df, title, color) {
@@ -478,7 +474,7 @@ ggsave(
 )
 
 ############################################################
-## 16. SPECIES & PRODUCTION COMPOSITION WITHIN COUNTIES
+##  SPECIES & PRODUCTION COMPOSITION WITHIN COUNTIES
 ############################################################
 
 species_county <- population %>%
@@ -502,7 +498,7 @@ production_county <- population %>%
   ungroup()
 
 ############################################################
-## 17. SPECIES-SPECIFIC ENSEMBLE SEIR (I ONLY)
+## SPECIES-SPECIFIC ENSEMBLE SEIR (I ONLY)
 ############################################################
 
 species_levels <- unique(species_county$species)
@@ -571,7 +567,7 @@ ggsave(
 )
 
 ############################################################
-## 18. PRODUCTION-SPECIFIC ENSEMBLE SEIR (I ONLY)
+## PRODUCTION-SPECIFIC ENSEMBLE SEIR (I ONLY)
 ############################################################
 
 prod_levels <- unique(production_county$production)
@@ -643,7 +639,7 @@ ggsave(
 )
 
 ############################################################
-## 19. COUNTY-LEVEL ENSEMBLE I(t): MEAN + CI
+##  COUNTY-LEVEL ENSEMBLE I(t): MEAN + CI
 ############################################################
 
 get_county_I_ci <- function(arr) {
@@ -686,7 +682,7 @@ ggsave(
   device = cairo_pdf
 )
 ############################################################
-## 20. JOIN ENSEMBLE I(t) WITH COUNTY POLYGONS (MAPS + ANIMATION)
+## JOIN ENSEMBLE I(t) WITH COUNTY POLYGONS (MAPS + ANIMATION)
 ############################################################
 
 I_county_map <- counties_sf %>%
@@ -891,7 +887,7 @@ anim <- animate(
 anim_save("ensemble_I_animation.mp4", animation = anim)
 
 ############################################################
-## 2. ENSEMBLE TOTAL INCIDENCE VS OBSERVED (WITH FIT/FORECAST SPLIT)
+## ENSEMBLE TOTAL INCIDENCE VS OBSERVED (WITH FIT/FORECAST SPLIT)
 ############################################################
 
 I_total <- apply(multi$I, c(1, 3), sum)
@@ -952,7 +948,7 @@ ggsave(
 )
 
 ############################################################
-## 22. ACTUAL OBSERVED INFECTIOUS FARMS PER COUNTY PER DAY
+##  ACTUAL OBSERVED INFECTIOUS FARMS PER COUNTY PER DAY
 ############################################################
 
 actual_I <- cases %>%
@@ -1023,7 +1019,7 @@ anim <- animate(
 anim_save("actual_I_animation.gif", animation = anim)
 
 ############################################################
-## 23. COUNTY-LEVEL ACTUAL VS ENSEMBLE I(t) WITH CI
+##  COUNTY-LEVEL ACTUAL VS ENSEMBLE I(t) WITH CI
 ############################################################
 
 get_county_I_mean <- function(arr) {
@@ -1093,7 +1089,7 @@ ggsave(
 )
 
 ############################################################
-## 24. PREDICTED BURDEN OVER 4-WEEK HORIZON (FROM FIT END)
+## PREDICTED BURDEN OVER 4-WEEK HORIZON (FROM FIT END)
 ############################################################
 
 pred_start <- fit_end_date + 1
@@ -1168,7 +1164,7 @@ ggsave(
 )
 
 ############################################################
-## 25. SPECIES- AND PRODUCTION-WEIGHTED RISK MAPS
+##  SPECIES- AND PRODUCTION-WEIGHTED RISK MAPS
 ############################################################
 
 species_risk <- species_county %>%
@@ -1362,4 +1358,5 @@ ggsave(
   height = 8,
   device = cairo_pdf
 )
+
 
