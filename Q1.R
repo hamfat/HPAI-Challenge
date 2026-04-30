@@ -1,3 +1,7 @@
+setwd("C:/Users/em18651/Desktop/AUT-admin/HPAI_Challenge_2026/Phase 2 Resources/Phase 2 documents")
+
+
+
 library(dplyr)
 library(tidyr)
 library(readr)
@@ -6,6 +10,8 @@ library(ggplot2)
 library(sf)
 library(FNN)
 library(purrr)
+library(tidyverse)
+library(gt)
 
 
 #### plotting function
@@ -92,7 +98,8 @@ cases_sf <- cases_full %>%
 
 tab_species_prod <- cases_full %>%
   count(species, production, name = "n_outbreaks")
-print(tab_species_prod)
+gt(tab_species_prod)
+
 
 daily_incidence_obs <- cases %>%
   count(date_confirmed, name = "n_confirmed")
@@ -252,7 +259,7 @@ districts_cases <- districts %>%
 p_map_points <- ggplot() +
   geom_sf(data = counties, fill = "grey95", color = "grey70") +
   geom_sf(data = hrz, fill = NA, color = "red") +
-  geom_sf(data = cases_sf, aes(color = species), size = 2) +
+  geom_sf(data = cases_sf, aes(color = species), size = 1.5, alpha=0.6) +
   scale_color_manual(values = c(chicken = "darkorange", duck = "dodgerblue")) +
   theme_minimal() +
   labs(title = "Spatial distribution of outbreaks",
@@ -276,7 +283,7 @@ ggsave(
 spatial_ProdT<-ggplot() +
   geom_sf(data = counties, fill = "grey95", color = "grey70") +
   geom_sf(data = hrz, fill = NA, color = "red") +
-  geom_sf(data = cases_sf, aes(color = production), size = 2) +
+  geom_sf(data = cases_sf, aes(color = production), size = 1.5, alpha=0.6) +
   theme_minimal() +
   labs(
     title = "Spatial Distribution of Outbreaks by Production Type",
@@ -378,6 +385,20 @@ ggsave(
 )
 
 
+#ggplot() +
+# geom_sf(data = counties, fill = "grey95", color = "grey70") +
+# stat_density_2d(
+#   data = st_coordinates(cases_sf) %>% as.data.frame(),
+#  aes(X, Y, fill = after_stat(level)),
+#   geom = "polygon",
+#   alpha = 0.6
+# ) +
+# scale_fill_viridis_c() +
+# theme_minimal() +
+# labs(
+#   title = "Spatial Density of Outbreaks",
+#   fill = "Density"
+# )
 
 cases_by_district_prod <- cases_full %>%
   count(district, production, name = "n_outbreaks")
@@ -427,35 +448,72 @@ county_centroids <- st_centroid(counties)
 
 #district_centroids <- st_centroid(districts)
 
+cases_by_county <- cases_full %>%
+  count(county, name = "n_outbreaks")
+
+countycases <- counties %>%
+  left_join(cases_by_county, by = "county") %>%
+  mutate(n_outbreaks = replace_na(n_outbreaks, 0))
+
 Spatialcountycases<-ggplot() +
   geom_sf(data = counties, fill = "grey95", color = "grey70") +
-  geom_sf(data = hrz, fill = NA, color = "yellow", linewidth = 0.7) +
+  geom_sf(data = hrz, fill = NA, color = "red", linewidth = 0.7) +
+  geom_sf(data = countycases, aes(fill = n_outbreaks), color = NA, alpha = 0.9) +
+  #geom_sf(data = cases_sf, aes(color = species), size = 1.8, alpha = 0.9) +
+  
+  # District labels
+  #geom_sf_text(data = district_centroids, aes(label = district), size = 3, color = "black") +
+  #county
+  geom_sf_text(data = county_centroids, aes(label = county), size = 4, color = "white")+
+
+  #facet_wrap(~ production) +
+  
+  scale_fill_viridis_c() +
+  #scale_color_manual(values = c(chicken = "darkorange", duck = "dodgerblue")) +
+  
+  theme_minimal() +
+  labs(
+    title = "Outbreaks per County",
+    fill = "Outbreaks"
+  )+theme_epi()
+print(Spatialcountycases)
+
+ggsave(
+  "Spatialcountycases.png",
+  plot = Spatialcountycases ,
+  dpi = 600,
+  width = 12,
+  height = 8,
+  units = "in"
+)
+
+Spatial_dist_prod_cases<-ggplot() +
+  geom_sf(data = counties, fill = "grey95", color = "grey70") +
+  geom_sf(data = hrz, fill = NA, color = "red", linewidth = 0.7) +
   geom_sf(data = districts_prod, aes(fill = n_outbreaks), color = NA, alpha = 0.9) +
   geom_sf(data = cases_sf, aes(color = species), size = 1.8, alpha = 0.9) +
   
   # District labels
   #geom_sf_text(data = district_centroids, aes(label = district), size = 3, color = "black") +
   #county
-  geom_sf_text(data = county_centroids, aes(label = county), size = 4, color = "white")
-
-facet_wrap(~ production) +
+  #geom_sf_text(data = county_centroids, aes(label = county), size = 4, color = "white")+
+  
+  #facet_wrap(~ production) +
   
   scale_fill_viridis_c() +
-  scale_color_manual(values = c(chicken = "darkorange", duck = "dodgerblue")) +
+  #scale_color_manual(values = c(chicken = "darkorange", duck = "dodgerblue")) +
   
   theme_minimal() +
   labs(
-    title = "Outbreaks per District by Production Type (with District Labels)",
+    title = "Outbreaks per District by Species",
     fill = "Outbreaks",
     color = "Species"
   )+theme_epi()
-print(Spatialcountycases)
-
-
+print(Spatial_dist_prod_cases)
 
 ggsave(
-  "Spatialcountycases.png",
-  plot = Spatialcountycases ,
+  "Spatial_dist_prod_cases.png",
+  plot = Spatial_dist_prod_cases ,
   dpi = 600,
   width = 12,
   height = 8,
@@ -480,7 +538,14 @@ p_risk_map <- ggplot() +
        color = "Within 1 km")
 print(p_risk_map)
 
-
+ggsave(
+  "p_risk_map.png",
+  plot = p_risk_map ,
+  dpi = 600,
+  width = 12,
+  height = 8,
+  units = "in"
+)
 
 
 ##############################
@@ -504,13 +569,18 @@ tail(cases)
 cases %>% mutate(date_suspicious = ifelse(date_suspicious=="",date_confirmed,date_suspicious),
                  day_sus = as.numeric(as.Date(date_suspicious)-as.Date("2025-12-19")),
                  day_conf = as.numeric(as.Date(date_confirmed)-as.Date("2025-12-19")),
-                 cull_end = ifelse(cull_end=="","2026-01-18",cull_end),
+                 cull_end = ifelse(cull_end=="","2026-02-16",cull_end),
                  day_cull_end = as.numeric(as.Date(cull_end)-as.Date("2025-12-19"))) -> cases
 
-cases_daily = read.csv("HPAI_farms_infection_start_end day.csv",header=T)
+tmp <- tibble(as.data.frame(matrix(NA, nrow = nrow(population),ncol = max(cases$day_conf)))) %>%
+  set_names(paste0("Day", 1:max(cases$day_conf)))
+
+cases_daily = bind_cols(population,tmp)
+
+#cases_daily = read.csv("HPAI_farms_infection_start_end day.csv",header=T)
 head(cases_daily)
-cases_daily %>% select(c(farm_id:Day25)) %>% 
-  mutate(across(Day1:Day26, ~NA)) -> cases_daily
+#cases_daily %>% select(c(farm_id:Day25)) %>% 
+#  mutate(across(Day1:Day26, ~NA)) -> cases_daily
 
 cases_daily %>% pivot_longer(cols = starts_with("Day"),      # Selects columns starting with "Year"
                              names_to = "Day",               # New column for original column names
@@ -554,8 +624,7 @@ for (i in 1:max(dat_sf$Day_numeric)){
 } #red = chicken, green = duck
 
 plots <- mget(paste0("p", 1:max(dat_sf$Day_numeric)))
-plot_combined = plot_grid(plotlist = plots, ncol = 5,labels=1:max(dat_sf$Day_numeric),align="hvlb")
+plot_combined = plot_grid(plotlist = plots, ncol = 7,labels=1:max(dat_sf$Day_numeric),align="hvlb")
 plot_combined
-ggsave("st_plot.png",plot_combined,width=30,height=25,unit="cm",dpi=1000)
-
+ggsave("st_plot.png",plot_combined,width=35,height=25,unit="cm",dpi=1000)
 
